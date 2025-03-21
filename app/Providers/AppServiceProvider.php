@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Loan;
+use App\Observers\LoanObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (class_exists(Loan::class) && class_exists(LoanObserver::class)) {
+            Loan::observe(LoanObserver::class);
+        }
     }
 }
