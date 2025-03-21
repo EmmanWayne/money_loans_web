@@ -56,6 +56,11 @@ class Loan extends Model
         });
 
         static::updating(function ($loan) {
+            // Recalcular montos si cambian campos relevantes
+            if ($loan->isDirty(['amount', 'interest_rate', 'term_months', 'payment_frequency'])) {
+                $loan->calculateAmounts();
+            }
+
             // Actualiza approved_at cuando el estado cambia a APPROVED
             if ($loan->isDirty('status') && $loan->status === 'APPROVED') {
                 $loan->approved_at = now();
@@ -130,5 +135,35 @@ class Loan extends Model
               ->whereYear('due_date', now()->year)
               ->where('status', '!=', 'PAID');
         });
+    }
+
+    public function createPaymentSchedule()
+    {
+        $amount = $this->amount;
+        $term = $this->term;
+        $interest_rate = $this->interest_rate;
+        
+        // Calcula el pago mensual (capital + interés)
+        $monthly_payment = ($amount * ($interest_rate / 100 / 12) * pow(1 + $interest_rate / 100 / 12, $term)) / (pow(1 + $interest_rate / 100 / 12, $term) - 1);
+        
+        $balance = $amount;
+        $date = $this->start_date;
+        
+        for ($i = 1; $i <= $term; $i++) {
+            $interest = $balance * ($interest_rate / 100 / 12);
+            $principal = $monthly_payment - $interest;
+            $balance -= $principal;
+            
+            $this->payments()->create([
+                'due_date' => $date,
+                'amount' => round($monthly_payment, 2),
+                'principal' => round($principal, 2),
+                'interest' => round($interest, 2),
+                'balance' => round($balance, 2),
+                'payment_number' => $i
+            ]);
+            
+            $date = date('Y-m-d', strtotime("+1 month", strtotime($date)));
+        }
     }
 }
