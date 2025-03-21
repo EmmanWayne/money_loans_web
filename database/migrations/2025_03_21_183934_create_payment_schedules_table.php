@@ -19,10 +19,13 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->decimal('principal_amount', 10, 2);
             $table->decimal('interest_amount', 10, 2);
-            $table->enum('status', ['PENDING', 'PAID', 'PARTIAL', 'LATE']);
-            $table->decimal('paid_amount', 10, 2)->default(0);
+            $table->enum('status', ['PENDING', 'PARTIAL', 'PAID', 'LATE'])->default('PENDING');
+            $table->decimal('paid_amount', 10, 2)->default(0.00);
             $table->decimal('remaining_amount', 10, 2);
+            $table->index(['loan_id', 'due_date']);
+            $table->index('status');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ClientResource\Pages;
-use App\Filament\Resources\ClientResource\RelationManagers;
 use App\Models\Client;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ClientResource extends Resource
 {
@@ -24,30 +21,37 @@ class ClientResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label('Nombre')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('email')
+                    ->label('Correo Electrónico')
                     ->email()
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('phone')
+                    ->label('Teléfono')
                     ->required()
                     ->tel()
                     ->maxLength(255),
                 Forms\Components\Textarea::make('address')
+                    ->label('Dirección')
                     ->required()
                     ->maxLength(65535),
                 Forms\Components\Select::make('identification_type')
+                    ->label('Tipo de Identificación')
                     ->required()
                     ->options([
-                        'DNI' => 'DNI',
+                        'DNI' => 'Identidad',
                         'PASSPORT' => 'Pasaporte',
                         'OTHER' => 'Otro',
                     ]),
                 Forms\Components\TextInput::make('identification_number')
+                    ->label('Número de Identificación')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Select::make('employment_status')
+                    ->label('Estado Laboral')
                     ->required()
                     ->options([
                         'EMPLOYED' => 'Empleado',
@@ -56,9 +60,10 @@ class ClientResource extends Resource
                         'RETIRED' => 'Jubilado',
                     ]),
                 Forms\Components\TextInput::make('monthly_income')
+                    ->label('Ingreso Mensual')
                     ->required()
                     ->numeric()
-                    ->prefix('$'),
+                    ->prefix('L'),
             ]);
     }
 
@@ -67,17 +72,23 @@ class ClientResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nombre')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->label('Correo')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
+                    ->label('Teléfono')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('identification_number')
+                    ->label('No. Identidad')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('monthly_income')
-                    ->money()
+                    ->label('Ingreso Mensual')
+                    ->money('HNL')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Creado')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

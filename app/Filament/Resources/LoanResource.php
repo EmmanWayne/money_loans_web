@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\LoanResource\Pages;
-use App\Filament\Resources\LoanResource\RelationManagers;
 use App\Models\Loan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class LoanResource extends Resource
 {
@@ -24,35 +21,33 @@ class LoanResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('client_id')
+                    ->label('Cliente')
                     ->relationship('client', 'name')
-                    ->searchable()
-                    ->preload()
                     ->required(),
                 Forms\Components\TextInput::make('amount')
+                    ->label('Monto')
                     ->required()
                     ->numeric()
-                    ->prefix('$')
-                    ->minValue(0),
+                    ->prefix('L'),
                 Forms\Components\TextInput::make('interest_rate')
+                    ->label('Tasa de Interés')
                     ->required()
                     ->numeric()
-                    ->suffix('%')
-                    ->minValue(0)
-                    ->maxValue(100),
+                    ->suffix('%'),
                 Forms\Components\TextInput::make('term_months')
+                    ->label('Plazo (Meses)')
                     ->required()
-                    ->numeric()
-                    ->minValue(1)
-                    ->maxValue(60),
+                    ->numeric(),
                 Forms\Components\Select::make('payment_frequency')
-                    ->required()
+                    ->label('Frecuencia de Pago')
                     ->options([
                         'WEEKLY' => 'Semanal',
                         'BIWEEKLY' => 'Quincenal',
                         'MONTHLY' => 'Mensual',
-                    ]),
+                    ])
+                    ->required(),
                 Forms\Components\Select::make('status')
-                    ->required()
+                    ->label('Estado')
                     ->options([
                         'PENDING' => 'Pendiente',
                         'APPROVED' => 'Aprobado',
@@ -61,33 +56,45 @@ class LoanResource extends Resource
                         'COMPLETED' => 'Completado',
                         'DEFAULTED' => 'En mora',
                     ])
-                    ->default('PENDING'),
-                Forms\Components\Textarea::make('rejection_reason')
-                    ->visible(fn (Forms\Get $get) => $get('status') === 'REJECTED')
-                    ->maxLength(65535),
+                    ->default('PENDING')
+                    ->required(),
             ]);
     }
+
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('client.name')
+                    ->label('Cliente')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money()
+                    ->label('Monto')
+                    ->money('HNL')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('interest_rate')
+                    ->label('Interés')
                     ->numeric()
                     ->suffix('%')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('term_months')
+                    ->label('Plazo')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Monto Principal')
+                    ->money('HNL')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('total_amount')
+                    ->label('Monto Total')
+                    ->money('HNL')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'PENDING' => 'warning',
                         'APPROVED' => 'success',
                         'REJECTED' => 'danger',
@@ -95,10 +102,6 @@ class LoanResource extends Resource
                         'COMPLETED' => 'success',
                         'DEFAULTED' => 'danger',
                     }),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

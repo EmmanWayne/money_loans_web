@@ -1,39 +1,57 @@
 <?php
 
-namespace App\Observers;  // Asegúrate que este sea el namespace correcto
+namespace App\Observers;
 
 use App\Models\Loan;
-use App\Services\LoanCalculatorService;
+use Carbon\Carbon;
 
 class LoanObserver
 {
-    protected $calculator;
-
-    public function __construct(LoanCalculatorService $calculator)
+    public function updated(Loan $loan)
     {
-        $this->calculator = $calculator;
-    }
-
-    public function created(Loan $loan): void
-    {
-        if ($loan->status === 'APPROVED') {
+        // Si el préstamo fue aprobado, generar calendario de pagos
+        if ($loan->isDirty('status') && $loan->status === 'APPROVED') {
             $this->generatePaymentSchedule($loan);
         }
     }
 
-    public function updated(Loan $loan): void
+    private function generatePaymentSchedule(Loan $loan)
     {
-        if ($loan->status === 'APPROVED' && $loan->wasChanged('status')) {
-            $this->generatePaymentSchedule($loan);
-        }
-    }
-
-    protected function generatePaymentSchedule(Loan $loan): void
-    {
-        $schedules = $this->calculator->calculateLoanSchedule($loan);
+        $startDate = Carbon::now();
+        $totalInterest = $loan->total_amount - $loan->amount;
         
-        foreach ($schedules as $schedule) {
-            $loan->schedules()->create($schedule);
+        // Calcular el número de pagos según la frecuencia
+        $numberOfPayments = match ($loan->payment_frequency) {
+            'WEEKLY' => $loan->term_months * 4,
+            'BIWEEKLY' => $loan->term_months * 2,
+            'MONTHLY' => $loan->term_months,
+        };
+
+        // Calcular montos por cuota
+        $installmentAmount = $loan->monthly_payment;
+        $principalPerInstallment = $loan->amount / $numberOfPayments;
+        $interestPerInstallment = $totalInterest / $numberOfPayments;
+
+        // Generar cada cuota
+        for ($i = 1; $i <= $numberOfPayments; $i++) {
+            // Calcular fecha de vencimiento según frecuencia
+            $dueDate = match ($loan->payment_frequency) {
+                'WEEKLY' => $startDate->copy()->addWeeks($i),
+                'BIWEEKLY' => $startDate->copy()->addWeeks($i * 2),
+                'MONTHLY' => $startDate->copy()->addMonths($i),
+            };
+
+            $loan->schedules()->create([
+                'installment_number' => $i,
+                'due_date' => $dueDate,
+                'amount' => $installmentAmount,
+                'principal_amount' => $principalPerInstallment,
+                'interest_amount' => $interestPerInstallment,
+                'remaining_amount' => $installmentAmount,
+            ]);
         }
+
+        // Actualizar estado del préstamo a ACTIVE
+        $loan->update(['status' => 'ACTIVE']);
     }
 }

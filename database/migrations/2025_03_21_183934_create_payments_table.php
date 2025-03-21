@@ -18,8 +18,10 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->enum('payment_method', ['CASH', 'TRANSFER', 'CARD', 'OTHER']);
             $table->string('reference_number')->nullable();
+            $table->datetime('payment_date');
             $table->text('notes')->nullable();
-            $table->timestamp('payment_date');
+            $table->index(['loan_id', 'payment_date']);
+            $table->index(['payment_schedule_id', 'payment_method']);
             $table->timestamps();
             $table->softDeletes();
         });

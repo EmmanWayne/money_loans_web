@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\Loan;
 use App\Observers\LoanObserver;
 use Illuminate\Support\ServiceProvider;
+use App\Models\Payment;
+use App\Observers\PaymentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
     {
         if (class_exists(Loan::class) && class_exists(LoanObserver::class)) {
             Loan::observe(LoanObserver::class);
+        }
+        if (class_exists(Payment::class) && class_exists(PaymentObserver::class)) {
+            Payment::observe(PaymentObserver::class);
         }
     }
 }

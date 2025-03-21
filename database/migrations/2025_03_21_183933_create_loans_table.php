@@ -25,6 +25,9 @@ return new class extends Migration
             $table->text('rejection_reason')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->index(['client_id', 'status']);
+            $table->index('payment_frequency');
+            $table->index('approved_at');
         });
     }
 
